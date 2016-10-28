@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-redundant-constraints #-}
+{-# LANGUAGE EmptyDataDecls    #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RebindableSyntax  #-}
