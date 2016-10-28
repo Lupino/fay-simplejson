@@ -18,13 +18,13 @@ import           SimpleJSON
 
 data Test = Test { xKey :: Text, xValue :: Text, subTest :: SubTest }
 
-decoder :: Decoder
-decoder = withDecoder "Text" [ customDecoderRule "xkey" "key",
-                               customDecoderRule "xValue" "value" ]
+decoder :: Parser
+decoder = withDecoder "Text" [ customRule "xkey" "key",
+                               customRule "xValue" "value" ]
 
-encoder :: Encoder
-encoder = withEncoder [ customEncoderRule "key" "xKey",
-                            customEncoderRule "value" "xValue" ]
+encoder :: Parser
+encoder = withEncoder [ customRule "key" "xKey",
+                        customRule "value" "xValue" ]
 
 main :: Fay ()
 main = do

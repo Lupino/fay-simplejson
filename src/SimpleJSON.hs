@@ -7,20 +7,14 @@
 module SimpleJSON
   (
     Value,
-    Decoder,
-    Encoder,
-    toDecoder,
-    toEncoder,
-    DecoderRule,
-    customDecoderRule,
-    decoderRule,
-    listDecoderRule,
-    EncoderRule,
-    customEncoderRule,
-    encoderRule,
-    listEncoderRule,
-    fromJSON,
-    toJSON,
+    Parser,
+    toParser,
+    Rule,
+    customRule,
+    rule,
+    listRule,
+    runParser,
+    runListParser,
     withDecoder,
     withEncoder,
     decode,
@@ -36,63 +30,34 @@ import           Prelude
 import           Unsafe.Coerce (unsafeCoerce)
 data Value
 
-newtype Decoder = Decoder (Value -> Value)
-newtype Encoder = Encoder (Value -> Value)
+newtype Parser = Parser (Value -> Value)
 
-data DecoderRule = CustomDecoderRule Text Text
-                 | DecoderRule       Text Text Decoder
-                 | ListDecoderRule   Text Text Decoder
+data Rule = CustomRule Text Text
+          | Rule       Text Text Parser
+          | ListRule   Text Text Parser
 
-customDecoderRule :: Text -> Text -> DecoderRule
-customDecoderRule = CustomDecoderRule
+customRule :: Text -> Text -> Rule
+customRule = CustomRule
 
-decoderRule :: Text -> Text -> Decoder -> DecoderRule
-decoderRule = DecoderRule
+rule :: Text -> Text -> Parser -> Rule
+rule = Rule
 
-listDecoderRule :: Text -> Text -> Decoder -> DecoderRule
-listDecoderRule = ListDecoderRule
+listRule :: Text -> Text -> Parser -> Rule
+listRule = ListRule
 
-runDecoderRule :: DecoderRule -> Value -> Value -> Value
-runDecoderRule (CustomDecoderRule ref key) v0 v1 = set v0 ref $ get v1 key
-runDecoderRule (DecoderRule ref key dec) v0 v1 = set v0 ref $ fromJSON (get v1 key) dec
-runDecoderRule (ListDecoderRule ref key dec) v0 v1 = set v0 ref $ fromJSONList (get v1 key) dec
+runRule :: Rule -> Value -> Value -> Value
+runRule (CustomRule ref key) v0 v1 = set v0 ref $ get v1 key
+runRule (Rule ref key p) v0 v1     = set v0 ref $ runParser p (get v1 key)
+runRule (ListRule ref key p) v0 v1 = set v0 ref $ runListParser p (get v1 key)
 
-data EncoderRule = CustomEncoderRule Text Text
-                 | EncoderRule       Text Text Encoder
-                 | ListEncoderRule   Text Text Encoder
+toParser :: (Value -> Value) -> Parser
+toParser = Parser
 
-customEncoderRule :: Text -> Text -> EncoderRule
-customEncoderRule = CustomEncoderRule
+runParser :: Parser -> Value -> Value
+runParser (Parser f) v = f v
 
-encoderRule :: Text -> Text -> Encoder -> EncoderRule
-encoderRule = EncoderRule
-
-listEncoderRule :: Text -> Text -> Encoder -> EncoderRule
-listEncoderRule = ListEncoderRule
-
-runEncoderRule :: EncoderRule -> Value -> Value -> Value
-runEncoderRule (CustomEncoderRule ref key) v0 v1 = set v0 ref $ get v1 key
-runEncoderRule (EncoderRule ref key enc) v0 v1 = set v0 ref $ toJSON (get v1 key) enc
-runEncoderRule (ListEncoderRule ref key enc) v0 v1 = set v0 ref $ toJSONList (get v1 key) enc
-
-toDecoder :: (Value -> Value) -> Decoder
-toDecoder = Decoder
-
-toEncoder :: (Value -> Value) -> Encoder
-toEncoder = Encoder
-
-fromJSON :: Value -> Decoder -> Value
-fromJSON v (Decoder f) = f v
-
-fromJSONList :: Value -> Decoder -> Value
-fromJSONList v (Decoder f) = unsafeCoerce $ map f $ unsafeCoerce v
-
-toJSON :: Value -> Encoder -> Value
-toJSON v (Encoder f) = f v
-
-toJSONList :: Value -> Encoder -> Value
-toJSONList v (Encoder f) = unsafeCoerce $ map f $ unsafeCoerce v
-
+runListParser :: Parser -> Value -> Value
+runListParser (Parser f) v = unsafeCoerce $ map f $ unsafeCoerce v
 
 set :: Value -> Text -> b -> Value
 set = ffi "(function(obj, key, val) { obj[key] = val; return obj; })(%1, %2, %3)"
@@ -109,27 +74,27 @@ decodeRaw = ffi "JSON.parse(%1)"
 encodeRaw :: Value -> Text
 encodeRaw = ffi "JSON.stringify(%1)"
 
-decode :: Text -> Decoder -> a
-decode txt dec = unsafeCoerce $ p v dec
+decode :: Text -> Parser -> a
+decode txt p = unsafeCoerce $ runP p v
   where v = decodeRaw txt
-        p = if isList v then fromJSONList else fromJSON
+        runP = if isList v then runListParser else runParser
 
-encode :: a -> Encoder -> Text
-encode obj up = encodeRaw $ p v up
+encode :: a -> Parser -> Text
+encode obj p = encodeRaw $ runP p v
   where v = unsafeCoerce obj :: Value
-        p = if isList v then toJSONList else toJSON
+        runP = if isList v then runListParser else runParser
 
 newValue :: Fay Value
 newValue = ffi "{}"
 
-withDecoder :: Text -> [DecoderRule] -> Decoder
-withDecoder ins rules = toDecoder (go (set (unsafePerformFay newValue) "instance" ins) rules)
-  where go :: Value -> [DecoderRule] -> Value -> Value
-        go obj (x:xs) v = runDecoderRule x (go obj xs v) v
+withDecoder :: Text -> [Rule] -> Parser
+withDecoder ins rules = toParser (go (set (unsafePerformFay newValue) "instance" ins) rules)
+  where go :: Value -> [Rule] -> Value -> Value
+        go obj (x:xs) v = runRule x (go obj xs v) v
         go obj [] _     = obj
 
-withEncoder :: [EncoderRule] -> Encoder
-withEncoder rules = toEncoder (go (unsafePerformFay newValue) rules)
-  where go :: Value -> [EncoderRule] -> Value -> Value
-        go v (x:xs) obj = runEncoderRule x (go v xs obj) obj
+withEncoder :: [Rule] -> Parser
+withEncoder rules = toParser (go (unsafePerformFay newValue) rules)
+  where go :: Value -> [Rule] -> Value -> Value
+        go v (x:xs) obj = runRule x (go v xs obj) obj
         go v [] _       = v

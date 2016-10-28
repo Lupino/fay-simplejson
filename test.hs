@@ -12,26 +12,26 @@ import           SimpleJSON
 
 data SubTest = SubTest { xsKey :: Text, xsValue :: Text }
 
-subTestDecoder :: Decoder
-subTestDecoder = withDecoder "SubTest" [ customDecoderRule "xsKey" "key",
-                                         customDecoderRule "xsValue" "value" ]
-subTestEncoder :: Encoder
-subTestEncoder = withEncoder [ customEncoderRule "key" "xsKey",
-                               customEncoderRule "value" "xsValue" ]
+subTestDecoder :: Parser
+subTestDecoder = withDecoder "SubTest" [ customRule "xsKey" "key",
+                                         customRule "xsValue" "value" ]
+subTestEncoder :: Parser
+subTestEncoder = withEncoder [ customRule "key" "xsKey",
+                               customRule "value" "xsValue" ]
 
 data Test = Test { xKey :: Text, xValue :: Text, subTest :: SubTest }
 
-testDecoder :: Decoder
-testDecoder = withDecoder "Text" [ customDecoderRule "xkey" "key",
-                                   customDecoderRule "xValue" "value",
-                                   decoderRule       "subTest" "subTest" subTestDecoder,
-                                   listDecoderRule   "subTestList" "subTestList" subTestDecoder ]
+testDecoder :: Parser
+testDecoder = withDecoder "Text" [ customRule "xkey" "key",
+                                   customRule "xValue" "value",
+                                   rule       "subTest" "subTest" subTestDecoder,
+                                   listRule   "subTestList" "subTestList" subTestDecoder ]
 
-testEncoder :: Encoder
-testEncoder = withEncoder [ customEncoderRule "key" "xKey",
-                            customEncoderRule "value" "xValue",
-                            encoderRule       "subTest" "subTest" subTestEncoder,
-                            listEncoderRule   "subTestList" "subTestList" subTestEncoder ]
+testEncoder :: Parser
+testEncoder = withEncoder [ customRule "key" "xKey",
+                            customRule "value" "xValue",
+                            rule       "subTest" "subTest" subTestEncoder,
+                            listRule   "subTestList" "subTestList" subTestEncoder ]
 
 main :: Fay ()
 main = do
