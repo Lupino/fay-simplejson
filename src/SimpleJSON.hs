@@ -129,10 +129,8 @@ doParser obj rules ref = do
   o <- obj
   go o rules ref
   where go :: Value -> [Rule] -> Value -> Fay Value
-        go obj (x:xs) v = do
-          newObj <- runRule x obj v
-          go newObj xs v
-        go obj [] _     = return obj
+        go v (x:xs) o = go v xs =<< runRule x o v
+        go _ [] o     = return o
 
 withDecoder :: Text -> [Rule] -> Parser
 withDecoder ins rules = toParser (doParser newV rules)
