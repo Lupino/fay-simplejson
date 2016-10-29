@@ -15,7 +15,7 @@ module SimpleJSON
     listParser,
     (>>>),
     Rule,
-    customRule,
+    rawRule,
     rule,
     listRule,
     runParser,
@@ -38,23 +38,19 @@ data Value
 
 newtype Parser = Parser (Value -> Fay Value)
 
-data Rule = CustomRule Text Text
-          | Rule       Text Text Parser
-          | ListRule   Text Text Parser
+data Rule = Rule Parser Text Text
 
-customRule :: Text -> Text -> Rule
-customRule = CustomRule
-
-rule :: Text -> Text -> Parser -> Rule
+rule :: Parser -> Text -> Text -> Rule
 rule = Rule
 
-listRule :: Text -> Text -> Parser -> Rule
-listRule = ListRule
+rawRule :: Text -> Text -> Rule
+rawRule = rule rawParser
+
+listRule :: Parser -> Text -> Text -> Rule
+listRule p = rule (listParser p)
 
 runRule :: Rule -> Value -> Value -> Fay Value
-runRule (CustomRule ref key) v0 v1 = set v0 ref =<< get v1 key
-runRule (Rule ref key p) v0 v1     = set v0 ref =<< runParser p =<< get v1 key
-runRule (ListRule ref key p) v0 v1 = set v0 ref =<< runListParser p =<< get v1 key
+runRule (Rule p ref key) v0 v1 = set v0 ref =<< runParser p =<< get v1 key
 
 toParser :: (Value -> Fay Value) -> Parser
 toParser = Parser
