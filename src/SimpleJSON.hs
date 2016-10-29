@@ -164,7 +164,7 @@ newValue = ffi "{}"
 doParser :: Fay Value -> [Rule] -> Value -> Fay Value
 doParser obj rules ref = do
   o <- obj
-  go o rules ref
+  go ref rules o
   where go :: Value -> [Rule] -> Value -> Fay Value
         go v (x:xs) o = go v xs =<< runRule x o v
         go _ [] o     = return o
