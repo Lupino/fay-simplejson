@@ -85,9 +85,37 @@ encodeRaw :: Value -> Fay Text
 encodeRaw = ffi "JSON.stringify(%1)"
 
 decode :: Text -> Parser -> a
-decode txt p = unsafeCoerce (unsafePerformFay $ runP p v)
+decode txt p = unsafePerformFay $ fixedValue =<< runP p v
   where v = unsafePerformFay $ decodeRaw txt
         runP = if isList v then runListParser else runParser
+
+fixedValue :: Value -> Fay a
+fixedValue = ffi "(function(v){\
+                  \  function fixedObject(v) {\
+                  \    var o = {};\
+                  \    for (var k in v) {\
+                  \      if (k === '_instance') {\
+                  \        o[k.substr(1)] = v[k];\
+                  \      } else {\
+                  \        o[k] = fixed(v[k]);\
+                  \      }\
+                  \    }\
+                  \    return o;\
+                  \  }\
+                  \  function fixedArray(v) {\
+                  \    return v.map(fixed);\
+                  \  }\
+                  \  function fixed(v) {\
+                  \    if (Array.isArray(v)) {\
+                  \      return fixedArray(v);\
+                  \    } else if (typeof v === 'object') {\
+                  \      return fixedObject(v);\
+                  \    } else {\
+                  \      return v\
+                  \    }\
+                  \  }\
+                  \  return fixed(v);\
+                  \})(%1)"
 
 encode :: a -> Parser -> Text
 encode obj p = unsafePerformFay (encodeRaw =<< runP p v)
