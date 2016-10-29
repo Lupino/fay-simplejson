@@ -97,18 +97,23 @@ encode obj p = unsafePerformFay (encodeRaw =<< runP p v)
 newValue :: Fay Value
 newValue = ffi "{}"
 
-withDecoder :: Text -> [Rule] -> Parser
-withDecoder ins rules = toParser (go (unsafePerformFay $ set (unsafePerformFay newValue) "instance" ins) rules)
+doParser :: Fay Value -> [Rule] -> Value -> Fay Value
+doParser obj rules ref = do
+  o <- obj
+  go o rules ref
   where go :: Value -> [Rule] -> Value -> Fay Value
         go obj (x:xs) v = do
           newObj <- runRule x obj v
           go newObj xs v
         go obj [] _     = return obj
 
+withDecoder :: Text -> [Rule] -> Parser
+withDecoder ins rules = toParser (doParser newV rules)
+  where newV :: Fay Value
+        newV = do
+          v <- newValue
+          set v "_instance" ins
+
+
 withEncoder :: [Rule] -> Parser
-withEncoder rules = toParser (go (unsafePerformFay newValue) rules)
-  where go :: Value -> [Rule] -> Value -> Fay Value
-        go v (x:xs) obj = do
-          newV <- runRule x v obj
-          go newV xs obj
-        go v [] _       = return v
+withEncoder rules = toParser (doParser newValue rules)
