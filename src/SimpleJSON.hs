@@ -61,9 +61,8 @@ runParser :: Parser -> Value -> Fay Value
 runParser (Parser f) v = f v
 
 runListParser :: Parser -> Value -> Fay Value
-runListParser (Parser f) v = do
-  vs <- toList v
-  parsed <- mapM f vs
+runListParser p v = do
+  parsed <- mapM (runParser p) =<< toList v
   return $ unsafeCoerce parsed
 
 toList :: Value -> Fay [Value]
@@ -79,7 +78,7 @@ isList :: Value -> Bool
 isList = ffi "Array.isArray(%1)"
 
 decodeRaw :: Text -> Fay Value
-decodeRaw = ffi "(function(v) { v = JSON.parse(v); return v })(%1)"
+decodeRaw = ffi "JSON.parse(%1)"
 
 encodeRaw :: Value -> Fay Text
 encodeRaw = ffi "JSON.stringify(%1)"
