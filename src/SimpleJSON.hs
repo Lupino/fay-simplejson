@@ -9,6 +9,7 @@ module SimpleJSON
     Value,
     Parser,
     toParser,
+    rawParser,
     Rule,
     customRule,
     rule,
@@ -52,6 +53,9 @@ runRule (ListRule ref key p) v0 v1 = set v0 ref =<< runListParser p =<< get v1 k
 
 toParser :: (Value -> Fay Value) -> Parser
 toParser = Parser
+
+rawParser :: Parser
+rawParser = toParser return
 
 runParser :: Parser -> Value -> Fay Value
 runParser (Parser f) v = f v
