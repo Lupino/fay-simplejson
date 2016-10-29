@@ -10,6 +10,10 @@ module SimpleJSON
     Parser,
     toParser,
     rawParser,
+    toMaybeParser,
+    fromMaybeParser,
+    listParser,
+    (>>>),
     Rule,
     customRule,
     rule,
@@ -29,6 +33,7 @@ import           Fay.Unsafe    (unsafePerformFay)
 import           FFI           (ffi)
 import           Prelude
 import           Unsafe.Coerce (unsafeCoerce)
+
 data Value
 
 newtype Parser = Parser (Value -> Fay Value)
@@ -56,6 +61,34 @@ toParser = Parser
 
 rawParser :: Parser
 rawParser = toParser return
+
+(>>>) :: Parser -> Parser -> Parser
+(Parser f) >>> (Parser g) = toParser $ \v -> g =<< f v
+
+toMaybeParser :: Parser
+toMaybeParser = toParser toMaybe
+  where toMaybe :: Value -> Fay Value
+        toMaybe = ffi "(function(v) {\
+                       \  if (v) {\
+                       \    return { _instance: 'Just', slot1: v };\
+                       \  } else {\
+                       \    return { _instance: 'Nothing' };\
+                       \  }\
+                       \})(%1)"
+
+fromMaybeParser :: Parser
+fromMaybeParser = toParser fromMaybe'
+  where fromMaybe' :: Value -> Fay Value
+        fromMaybe' = ffi "(function(v) {\
+                          \  if (v._instance === 'Just') {\
+                          \    return v.slot1;\
+                          \  } else {\
+                          \    return null;\
+                          \  }\
+                          \})(%1)"
+
+listParser :: Parser -> Parser
+listParser p = toParser $ runListParser p
 
 runParser :: Parser -> Value -> Fay Value
 runParser (Parser f) v = f v
