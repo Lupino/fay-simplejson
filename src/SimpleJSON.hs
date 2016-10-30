@@ -61,27 +61,27 @@ rawParser = toParser return
 (>>>) :: Parser -> Parser -> Parser
 (Parser f) >>> (Parser g) = toParser $ \v -> g =<< f v
 
-nullValue :: Value -> Bool
-nullValue = ffi "(function(v) {\
-                 \  if (!v) {\
-                 \    return true;\
-                 \  }\
-                 \  if (Array.isArray(v)) {\
-                 \     return v.length === 0;\
-                 \  } else if (typeof v === 'object') {\
-                 \    for (var i in v) {\
-                 \      return false;\
-                 \    }\
-                 \    return true;\
-                 \  }\
-                 \  return false;\
-                 \})(%1)"
+isNull :: Value -> Bool
+isNull = ffi "(function(v) {\
+             \  if (!v) {\
+             \    return true;\
+             \  }\
+             \  if (Array.isArray(v)) {\
+             \     return v.length === 0;\
+             \  } else if (typeof v === 'object') {\
+             \    for (var i in v) {\
+             \      return false;\
+             \    }\
+             \    return true;\
+             \  }\
+             \  return false;\
+             \})(%1)"
 
 maybeParser :: Parser -> Parser
 maybeParser p = toParser toMaybe
   where toMaybe :: Value -> Fay Value
-        toMaybe v | nullValue v = nothing
-                  | otherwise   = just v
+        toMaybe v | isNull v  = nothing
+                  | otherwise = just v
 
           where nothing :: Fay Value
                 nothing = newValue' "Nothing"
@@ -89,16 +89,19 @@ maybeParser p = toParser toMaybe
                 just v' = do o <- newValue' "Just"
                              set o "slot1" =<< runParser p v'
 
+nullValue :: Value
+nullValue = ffi "undefined"
+
 fromMaybeParser :: Parser -> Parser
 fromMaybeParser p = toParser fromMaybe' >>> p
   where fromMaybe' :: Value -> Fay Value
-        fromMaybe' = ffi "(function(v) {\
-                          \  if (v._instance === 'Just') {\
-                          \    return v.slot1;\
-                          \  } else {\
-                          \    return '';\
-                          \  }\
-                          \})(%1)"
+        fromMaybe' v = do
+          ins <- get v "_instance"
+          if ins == "Just" then
+            runParser p =<< get v "slot1"
+          else
+            return nullValue
+
 
 listParser :: Parser -> Parser
 listParser p = toParser $ runListParser p
