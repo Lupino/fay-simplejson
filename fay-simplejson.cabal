@@ -1,5 +1,5 @@
 name:                fay-simplejson
-version:             0.1.2.0
+version:             0.1.3.0
 synopsis:            SimpleJSON library for Fay.
 description:         SimpleJSON library for Fay.
 homepage:            https://github.com/Lupino/fay-simplejson
