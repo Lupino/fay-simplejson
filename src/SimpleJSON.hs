@@ -10,7 +10,7 @@ module SimpleJSON
     Parser,
     toParser,
     rawParser,
-    toMaybeParser,
+    maybeParser,
     fromMaybeParser,
     listParser,
     (>>>),
@@ -61,25 +61,42 @@ rawParser = toParser return
 (>>>) :: Parser -> Parser -> Parser
 (Parser f) >>> (Parser g) = toParser $ \v -> g =<< f v
 
-toMaybeParser :: Parser
-toMaybeParser = toParser toMaybe
-  where toMaybe :: Value -> Fay Value
-        toMaybe = ffi "(function(v) {\
-                       \  if (v) {\
-                       \    return { _instance: 'Just', slot1: v };\
-                       \  } else {\
-                       \    return { _instance: 'Nothing' };\
-                       \  }\
-                       \})(%1)"
+nullValue :: Value -> Bool
+nullValue = ffi "(function(v) {\
+                 \  if (!v) {\
+                 \    return true;\
+                 \  }\
+                 \  if (Array.isArray(v)) {\
+                 \     return v.length === 0;\
+                 \  } else if (typeof v === 'object') {\
+                 \    for (var i in v) {\
+                 \      return false;\
+                 \    }\
+                 \    return true;\
+                 \  }\
+                 \  return false;\
+                 \})"
 
-fromMaybeParser :: Parser
-fromMaybeParser = toParser fromMaybe'
+maybeParser :: Parser -> Parser
+maybeParser p = toParser toMaybe
+  where toMaybe :: Value -> Fay Value
+        toMaybe v | nullValue v = nothing
+                  | otherwise   = just v
+
+          where nothing :: Fay Value
+                nothing = newValue' "Nothing"
+                just :: Value -> Fay Value
+                just v' = do o <- newValue' "Just"
+                             set o "slot1" =<< runParser p v'
+
+fromMaybeParser :: Parser -> Parser
+fromMaybeParser p = toParser fromMaybe' >>> p
   where fromMaybe' :: Value -> Fay Value
         fromMaybe' = ffi "(function(v) {\
                           \  if (v._instance === 'Just') {\
                           \    return v.slot1;\
                           \  } else {\
-                          \    return null;\
+                          \    return '';\
                           \  }\
                           \})(%1)"
 
