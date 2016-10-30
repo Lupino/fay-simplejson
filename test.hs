@@ -13,25 +13,37 @@ import           SimpleJSON
 data SubTest = SubTest { xsKey :: Text, xsValue :: Text }
 
 subTestDecoder :: Parser
-subTestDecoder = withDecoder "SubTest" [ customRule "xsKey" "key",
-                                         customRule "xsValue" "value" ]
+subTestDecoder = withDecoder "SubTest" [ rawRule "xsKey" "key",
+                                         rawRule "xsValue" "value" ]
 subTestEncoder :: Parser
-subTestEncoder = withEncoder [ customRule "key" "xsKey",
-                               customRule "value" "xsValue" ]
+subTestEncoder = withEncoder [ rawRule "key" "xsKey",
+                               rawRule "value" "xsValue" ]
 
-data Test = Test { xKey :: Text, xValue :: Text, subTest :: SubTest }
+data Test = Test { xKey          :: Text,
+                   xValue        :: Text,
+                   subTest       :: SubTest,
+                   subTestList   :: [SubTest],
+                   maybeTest     :: Maybe SubTest,
+                   maybeTestList :: Maybe [SubTest]
+                   }
 
 testDecoder :: Parser
-testDecoder = withDecoder "Text" [ customRule "xkey" "key",
-                                   customRule "xValue" "value",
-                                   rule       "subTest" "subTest" subTestDecoder,
-                                   listRule   "subTestList" "subTestList" subTestDecoder ]
+testDecoder = withDecoder "Text" [ rawRule  "xkey" "key",
+                                   rawRule  "xValue" "value",
+                                   rule     subTestDecoder "subTest" "subTest",
+                                   listRule subTestDecoder "subTestList" "subTestList",
+                                   rule     (maybeParser subTestDecoder) "maybeTest" "maybeTest",
+                                   rule     (maybeParser $ listParser subTestDecoder) "maybeTestList" "maybeTestList"
+                                   ]
 
 testEncoder :: Parser
-testEncoder = withEncoder [ customRule "key" "xKey",
-                            customRule "value" "xValue",
-                            rule       "subTest" "subTest" subTestEncoder,
-                            listRule   "subTestList" "subTestList" subTestEncoder ]
+testEncoder = withEncoder [ rawRule  "key" "xKey",
+                            rawRule  "value" "xValue",
+                            rule     subTestEncoder "subTest" "subTest",
+                            listRule subTestEncoder "subTestList" "subTestList",
+                            rule     (fromMaybeParser subTestEncoder) "maybeTest" "maybeTest",
+                            rule     (fromMaybeParser $ listParser subTestEncoder) "maybeTestList" "maybeTestList"
+                            ]
 
 main :: Fay ()
 main = do

@@ -16,15 +16,15 @@ import           Data.Text  (Text, fromString)
 import           Prelude
 import           SimpleJSON
 
-data Test = Test { xKey :: Text, xValue :: Text, subTest :: SubTest }
+data Test = Test { xKey :: Text, xValue :: Text }
 
 decoder :: Parser
-decoder = withDecoder "Text" [ customRule "xkey" "key",
-                               customRule "xValue" "value" ]
+decoder = withDecoder "Test" [ rawRule "xKey"   "key",
+                               rawRule "xValue" "value" ]
 
 encoder :: Parser
-encoder = withEncoder [ customRule "key" "xKey",
-                        customRule "value" "xValue" ]
+encoder = withEncoder [ rawRule "key"   "xKey",
+                        rawRule "value" "xValue" ]
 
 main :: Fay ()
 main = do
