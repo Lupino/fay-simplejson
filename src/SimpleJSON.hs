@@ -178,9 +178,7 @@ newValue' :: Text -> Fay Value
 newValue' = ffi "{ _instance: %1 }"
 
 doParser :: Fay Value -> [Rule] -> Value -> Fay Value
-doParser obj rules ref = do
-  o <- obj
-  go ref rules o
+doParser obj rules ref = go ref rules =<< obj
   where go :: Value -> [Rule] -> Value -> Fay Value
         go v (x:xs) o = go v xs =<< runRule x o v
         go _ [] o     = return o
