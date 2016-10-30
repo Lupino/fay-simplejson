@@ -93,14 +93,12 @@ nullValue :: Value
 nullValue = ffi "undefined"
 
 fromMaybeParser :: Parser -> Parser
-fromMaybeParser p = toParser fromMaybe' >>> p
-  where fromMaybe' :: Value -> Fay Value
-        fromMaybe' v = do
-          ins <- get v "_instance"
-          if ins == "Just" then
-            runParser p =<< get v "slot1"
-          else
-            return nullValue
+fromMaybeParser p = toParser $ \v -> do
+  ins <- get v "_instance"
+  if ins == "Just" then
+    runParser p =<< get v "slot1"
+  else
+    return nullValue
 
 
 listParser :: Parser -> Parser
