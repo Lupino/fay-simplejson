@@ -121,7 +121,7 @@ set :: Value -> Text -> b -> Fay Value
 set = ffi "(function(obj, key, val) { obj[key] = val; return obj; })(%1, %2, %3)"
 
 get :: Value -> Text -> Fay b
-get = ffi "(function(v, k) { if (v) {return v[k]; } else { return '' }})(%1, %2)"
+get = ffi "(function(v, k) { if (v) {return v[k]; } else { return undefined }})(%1, %2)"
 
 isList :: Value -> Bool
 isList = ffi "Array.isArray(%1)"
