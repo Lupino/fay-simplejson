@@ -32,8 +32,8 @@ testDecoder = withDecoder "Text" [ rawRule  "xkey" "key",
                                    rawRule  "xValue" "value",
                                    rule     subTestDecoder "subTest" "subTest",
                                    listRule subTestDecoder "subTestList" "subTestList",
-                                   rule     (maybeParser subTestDecoder) "maybeTest" "maybeTest",
-                                   rule     (maybeParser $ listParser subTestDecoder) "maybeTestList" "maybeTestList"
+                                   rule     (maybeParser <<< subTestDecoder) "maybeTest" "maybeTest",
+                                   rule     (maybeParser <<< listParser <<< subTestDecoder) "maybeTestList" "maybeTestList"
                                    ]
 
 testEncoder :: Parser
@@ -41,8 +41,8 @@ testEncoder = withEncoder [ rawRule  "key" "xKey",
                             rawRule  "value" "xValue",
                             rule     subTestEncoder "subTest" "subTest",
                             listRule subTestEncoder "subTestList" "subTestList",
-                            rule     (fromMaybeParser subTestEncoder) "maybeTest" "maybeTest",
-                            rule     (fromMaybeParser $ listParser subTestEncoder) "maybeTestList" "maybeTestList"
+                            rule     (fromMaybeParser <<< subTestEncoder) "maybeTest" "maybeTest",
+                            rule     (fromMaybeParser <<< listParser <<< subTestEncoder) "maybeTestList" "maybeTestList"
                             ]
 
 main :: Fay ()

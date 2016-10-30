@@ -13,7 +13,7 @@ module SimpleJSON
     maybeParser,
     fromMaybeParser,
     listParser,
-    (>>>),
+    (<<<),
     Rule,
     rawRule,
     rule,
@@ -58,8 +58,9 @@ toParser = Parser
 rawParser :: Parser
 rawParser = toParser return
 
-(>>>) :: Parser -> Parser -> Parser
-(Parser f) >>> (Parser g) = toParser $ \v -> g =<< f v
+(<<<) :: (Parser -> Parser) ->Parser ->  Parser
+f <<< p = f p
+infixr 1 <<<
 
 isNull :: Value -> Bool
 isNull = ffi "(function(v) {\
