@@ -75,7 +75,7 @@ nullValue = ffi "(function(v) {\
                  \    return true;\
                  \  }\
                  \  return false;\
-                 \})"
+                 \})(%1)"
 
 maybeParser :: Parser -> Parser
 maybeParser p = toParser toMaybe
