@@ -67,8 +67,8 @@ isNull = ffi "(function(v) {\
              \  if (!v) {\
              \    return true;\
              \  }\
-             \  if (Array.isArray(v)) {\
-             \     return v.length === 0;\
+             \  if (Array['isArray'](v)) {\
+             \     return v['length'] === 0;\
              \  } else if (typeof v === 'object') {\
              \    for (var i in v) {\
              \      return false;\
@@ -114,7 +114,7 @@ runListParser p v = do
   return $ unsafeCoerce parsed
 
 toList :: Value -> Fay [Value]
-toList = ffi "(function(v){ if (Array.isArray(v)){ return v; } else if (v) { return [v]; } else { return [] } })(%1)"
+toList = ffi "(function(v){ if (Array['isArray'](v)){ return v; } else if (v) { return [v]; } else { return [] } })(%1)"
 
 set :: Value -> Text -> b -> Fay Value
 set = ffi "(function(obj, key, val) { obj[key] = val; return obj; })(%1, %2, %3)"
@@ -123,13 +123,13 @@ get :: Value -> Text -> Fay b
 get = ffi "(function(v, k) { if (v) {return v[k]; } else { return undefined }})(%1, %2)"
 
 isList :: Value -> Bool
-isList = ffi "Array.isArray(%1)"
+isList = ffi "Array['isArray'](%1)"
 
 decodeRaw :: Text -> Fay Value
-decodeRaw = ffi "JSON.parse(%1)"
+decodeRaw = ffi "JSON['parse'](%1)"
 
 encodeRaw :: Value -> Fay Text
-encodeRaw = ffi "JSON.stringify(%1)"
+encodeRaw = ffi "JSON['stringify'](%1)"
 
 decode :: Text -> Parser -> a
 decode txt p = unsafePerformFay $ fixedInstance =<< runP p v
@@ -142,7 +142,7 @@ fixedInstance = ffi "(function(v){\
                   \    var o = {};\
                   \    for (var k in v) {\
                   \      if (k === '_instance') {\
-                  \        o[k.substr(1)] = v[k];\
+                  \        o[k['substr'](1)] = v[k];\
                   \        continue;\
                   \      }\
                   \      if (k === 'instance') {\
@@ -154,10 +154,10 @@ fixedInstance = ffi "(function(v){\
                   \    return o;\
                   \  }\
                   \  function fixedArray(v) {\
-                  \    return v.map(fixed);\
+                  \    return v['map'](fixed);\
                   \  }\
                   \  function fixed(v) {\
-                  \    if (Array.isArray(v)) {\
+                  \    if (Array['isArray'](v)) {\
                   \      return fixedArray(v);\
                   \    } else if (typeof v === 'object') {\
                   \      return fixedObject(v);\
