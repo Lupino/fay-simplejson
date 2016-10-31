@@ -85,9 +85,9 @@ maybeParser p = toParser toMaybe
                   | otherwise = just v
 
           where nothing :: Fay Value
-                nothing = newValue' "Nothing"
+                nothing = newValue' "_instance" "Nothing"
                 just :: Value -> Fay Value
-                just v' = do o <- newValue' "Just"
+                just v' = do o <- newValue' "_instance" "Just"
                              set o "slot1" =<< runParser p v'
 
 nullValue :: Value
@@ -176,8 +176,10 @@ encode obj p = unsafePerformFay (encodeRaw =<< runP p =<< fixedInstance v)
 newValue :: Fay Value
 newValue = ffi "{}"
 
-newValue' :: Text -> Fay Value
-newValue' = ffi "{ _instance: %1 }"
+newValue' :: Text -> Text -> Fay Value
+newValue' spec ins = do
+  v <- newValue
+  set v spec ins
 
 doParser :: Fay Value -> [Rule] -> Value -> Fay Value
 doParser obj rules ref = go ref rules =<< obj
@@ -186,7 +188,7 @@ doParser obj rules ref = go ref rules =<< obj
         go _ [] o     = return o
 
 withDecoder :: Text -> [Rule] -> Parser
-withDecoder ins rules = toParser (doParser (newValue' ins) rules)
+withDecoder ins rules = toParser (doParser (newValue' "_instance" ins) rules)
 
 withEncoder :: [Rule] -> Parser
 withEncoder rules = toParser (doParser newValue rules)
